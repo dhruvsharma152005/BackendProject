@@ -1,6 +1,8 @@
 import mongoose from "mongoose"
 import {DB_Name} from "../constants.js"
 
+//This is an async function (it returns a Promise), meaning it will wait for MongoDB to connect before moving on.
+
 
 const connectDB=async ()=>
 {
@@ -12,7 +14,9 @@ const connectDB=async ()=>
     catch(error)
     {
         console.log("MONGODB connection error",error);
-        process.exit(1)
+        process.exit(1)  //forcefully stops the program because the database is critical to your app.
+
+
     }
 }
 
