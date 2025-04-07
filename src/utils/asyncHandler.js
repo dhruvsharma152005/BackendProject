@@ -1,9 +1,9 @@
-
+//async handler ek method baneya aur use export krega
 //one way using promises
 const asyncHandler=(requestHandler)=>
     {
         (req,res,next)=>{
-            Promise.request(requestHandler(req,res,next)).catch((err)=>next(err))
+            Promise.resolve(requestHandler(req,res,next)).catch((err)=>next(err))
         }
     }
 
