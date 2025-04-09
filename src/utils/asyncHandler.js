@@ -1,8 +1,9 @@
 //async handler ek method baneya aur use export krega
 //one way using promises
+//role yha pe as a function accept kru aur as a function return kru
 const asyncHandler=(requestHandler)=>
     {
-        (req,res,next)=>{
+       return (req,res,next)=>{
             Promise.resolve(requestHandler(req,res,next)).catch((err)=>next(err))
         }
     }

@@ -20,4 +20,12 @@ app.use(express.static("public"))
 app.use(cookieParser())
 
 
+//routes
+import userRouter from './routes/user.routes.js'
+
+
+//routes declaration
+app.use("/api/v1/users",userRouter)
+
+//means https://localhost:8000/api/v1/users/login   means user se userrouter meh jayegi fir login meh userrouter ke andhar ye standard practice ha
 export { app }
