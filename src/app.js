@@ -8,7 +8,7 @@ const app=express()
 //app.use for middleware/configuration
 //origin kaha se accept krege
 app.use(cors({
-    origin:process.envv.CORS_ORIGIN,
+    origin:process.env.CORS_ORIGIN,
     credentials:true
 }))
 
@@ -25,7 +25,7 @@ import userRouter from './routes/user.routes.js'
 
 
 //routes declaration
-app.use("/api/v1/users",userRouter)
+app.use("/api/v1/users",userRouter);
 
 //means https://localhost:8000/api/v1/users/login   means user se userrouter meh jayegi fir login meh userrouter ke andhar ye standard practice ha
 export { app }

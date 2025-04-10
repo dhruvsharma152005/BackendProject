@@ -65,7 +65,7 @@ userSchema.pre("save",async function (next)
     //bcypt encrypt the password
     if(!this.isModified("password")) return next();  //this will run this part of code only when user want
     //to change password if not write this  then it will call every time before save anyhting and pasword save evey time
-    this.password=bcrypt.hash(this.password,10)
+    this.password=await bcrypt.hash(this.password,10)
     next()
 }
 )

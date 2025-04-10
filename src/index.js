@@ -1,10 +1,10 @@
 //require('dotenv').config({path:'./env})  //one way
 import dotenv from 'dotenv'
-import express from "express"
-//import {app} from './app.js'
 
+//import {app} from './app.js'  //this is wrong way to export space is matter
+import { app } from './app.js';
 import connectDB from './db/index.js';  //db import from index.js in db
-const app=express()
+
 dotenv.config({
     path:'./env'
 })
