@@ -289,6 +289,132 @@ const refreshAccessToken=asyncHandler(async(req,res)=>
 
 })
 
+const changeCurrentPassword=asyncHandler(async(req,res)=>
+{
+    //kon kon si field leni user se req .body mehse
+    const{oldPassword,newPassword}=req.body
+
+    //find old user
+    const user=await User.findById(req.user?._id) //req.user se id kyuki user ha
+    const isPasswordCorrect=await user.isPasswordCorrect(oldPassword)
+
+    if(!isPasswordCorrect)
+    {
+        throw new ApiError(400,"Invalid old password")
+    }
+    //user ke andhar field ha passsword usmeh new pass daldo
+    user.password=newPassword
+    //database dusre continent meh tha isliye await
+    await user.save({validateBeforeSave:false})//baki ke validation nhi krne save 
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200,{},"Password changed successfully"))
+})
+
+//current user get
+const getCurrentUser=asyncHandler(async(req,res)=>
+{
+    return 
+    res
+    .status(200)
+    .json(200,req.user,"current user fetch successfully")
+})
+
+const updateAccountDetails=asyncHandler(async(req,res)=>
+{
+    //kyakya uodate kra rha
+    const{fullName,email}=req.body
+
+    if(!fullName || !email)
+    {
+        throw new ApiError(400,"All fields are required")
+    }
+
+    const user=User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            //mongodb operator use
+            $set:{
+                fullName,
+                email:email   //two ways one is like above
+            }
+        },
+        {new:true}  //update hone ke baad jo inf hoti vo return hoti ha
+    ).select("-password")
+
+    return res.status(200)
+    .json(new ApiResponse(200,user,"Account details updated successfully"))
+})
+
+const updateUserAvatar=asyncHandler(async(req,res)=>
+{
+    //this we get through multermiddleware
+   const avatarLocalPath= req.file?.path
+   if(!avatarLocalPath)
+   {
+    throw new ApiError(400,"Avatar fle is missing")
+   }
+
+   const avatar=uploadOnCloudinary(avatarLocalPath)
+   //agr upload hogya aur url nhi mila
+   if(!avatar.url)
+   {
+    throw new ApiError(400,"Error while uploading on avatar")
+   }
+
+   //update
+   const user=await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+        $set:
+        {
+            avatar:avatar.url  //avatar ko change kr rhe
+        }
+    },
+    {new:true}
+   ).select("-password")
+   return res.status(200)
+   .json(
+    new ApiResponse(200,user,"Avatar image updated successfully")
+   )
+
+})
+
+const updateUserCoverImage=asyncHandler(async(req,res)=>
+    {
+        //this we get through multermiddleware
+       const coverImageLocalPath= req.file?.path
+       if(!coverImageLocalPath)
+       {
+        throw new ApiError(400,"Cover fle is missing")
+       }
+    
+       const coverImage=uploadOnCloudinary(coverImageLocalPath)
+       //agr upload hogya aur url nhi mila
+       if(!coverImage.url)
+       {
+        throw new ApiError(400,"Error while uploading cover image")
+       }
+    
+       //update
+      const user= await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set:
+            {
+                coverImager:coverImage.url  //avatar ko change kr rhe
+            }
+        },
+        {new:true}
+       ).select("-password")
+
+       return res.status(200)
+       .json(
+        new ApiResponse(200,user,"Cover image updated successfully")
+       )
+    
+    })
 
 
-export {registerUser,loginUser,logoutUser,refreshAccessToken}
+export {registerUser,loginUser,logoutUser,refreshAccessToken,changeCurrentPassword,getCurrentUser,updateAccountDetails,updateUserAvatar,updateUserCoverImage}
