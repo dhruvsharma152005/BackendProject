@@ -1,4 +1,4 @@
-import multer from "multer"
+import multer from "multer";
 
 
 //give full control on storing file to disk
@@ -11,7 +11,11 @@ const storage = multer.diskStorage({
     }
   })
   
-  export const upload = multer
-  (
-    { storage: storage }
-  ).single('file') //single file upload   
+//   export const upload = multer
+//   (
+//     { storage: storage }
+//   ).single('file') //single file upload   
+
+export const upload = multer({ 
+    storage, 
+});
