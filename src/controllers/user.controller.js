@@ -5,6 +5,7 @@ import { User } from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose";
 
 
 //access and refresh token method(we did not need async handler we didnot handle webrequest)
@@ -318,7 +319,7 @@ const getCurrentUser=asyncHandler(async(req,res)=>
     return 
     res
     .status(200)
-    .json(200,req.user,"current user fetch successfully")
+    .json(new ApiResponse(200,req.user,"current user fetch successfully"))
 })
 
 const updateAccountDetails=asyncHandler(async(req,res)=>
@@ -331,7 +332,7 @@ const updateAccountDetails=asyncHandler(async(req,res)=>
         throw new ApiError(400,"All fields are required")
     }
 
-    const user=User.findByIdAndUpdate(
+    const user=await User.findByIdAndUpdate(
         req.user?._id,
         {
             //mongodb operator use
@@ -410,11 +411,158 @@ const updateUserCoverImage=asyncHandler(async(req,res)=>
        ).select("-password")
 
        return res.status(200)
-       .json(
+       .json
+       (
         new ApiResponse(200,user,"Cover image updated successfully")
-       )
+       ) 
     
     })
 
+const getUserChannelProfile=asyncHandler(async(req,res)=>
+{
+    //user milega uske url se
+    const{username}=req.params
 
-export {registerUser,loginUser,logoutUser,refreshAccessToken,changeCurrentPassword,getCurrentUser,updateAccountDetails,updateUserAvatar,updateUserCoverImage}
+    if(!username?.trim())
+    {
+        throw new ApiError(400,"username is missing")
+    }
+   const channel= await User.aggregate([ //aggregate take array of pipeline
+    {
+        //filter stage1 doc1
+        $match:{
+            username:username?.toLowerCase()
+        }
+    },
+    //subsciber kitne ha
+    {
+        $lookup:  //kitne subscriber ha
+        {
+            from:"subscriptions",  //lower meh ho jati aur plural take from subscriptio model
+            localField:"_id",
+            foreignField:"channel", //channel ko select toh milege subscriber doc create same channel toh sub milege
+            as:"subscibers"
+
+        }
+    },
+    {
+        $lookup: //mene kitne channel subscribed kiye ha
+        {
+            from:"subscriptions",  
+            localField:"_id",
+            foreignField:"subscriber", 
+            as:"subscibedTo"
+        }
+    },
+    {
+        $addFields:  //additional field add
+        {
+            subscribersCount:
+            {
+                $size:"$subscribers"  //we use dollar bcz it is a field
+            },
+            channelSubscribedToCount:
+            {
+                $size:"$subscibedTo"   //kaha se add kiye  (kiski subscribed kiya mene)
+            },
+            isSubscribed:
+            {
+                $cond:
+                {
+                    if:{$in:[req.user?._id,"$subscribers.subscriber"]},  //req.user se match kiya
+                    then:true,
+                    else:false
+                }
+            }
+        }
+    },
+    {
+        //selected cheez duga
+        $project:
+        {
+            //kiskis ko pass on krna ha uske aage 1 lgadena ka
+            fullName:1,
+            username:1,
+            subscribersCount:1,
+            channelSubscribedToCount:1,
+            isSubscribed:1,
+            avatar:1,
+            coverImage:1,
+            email:1,
+
+        }
+    }
+
+   ])  
+
+   if(!channel?.length)  //checks how many items are in the array. If there’s no channel found, the length is 0 — and this condition becomes true.
+    {
+        throw new ApiError(404,"channel does not exist")
+    }
+    
+    return res.status(200)
+    .json(new ApiResponse(200,channnel[0],"User channel fetched successfully"))
+
+})
+
+//multiple nested lookup krne kyuki watch history se mil jayege lekin owner se phir se user meh jana
+//watch history get
+const getWatchHistory=asyncHandler(async(req,res)=>
+{
+    //get mongodb id or string  req.user?._id
+    const user=await User.aggregate([{
+        //humeh user mila
+        $match:{
+            _id:new mongoose.Types.ObjectId(req.user._id)
+        }  
+    },
+    {
+        $lookup:
+        {
+            from:"videos",
+            localField:"watchHistory",
+            foreignField:"_id",
+            as:"watchHistory",
+            //nested pipeline videos ke andhar hu abh phle user meh tha
+            pipeline:[
+                {
+                    $lookup:
+                    {
+                        from:"user",
+                        localField:"owner",
+                        foreignField:"_id",
+                        as:"owner",
+                        pipeline:[
+                            {
+                                //konkon sa data owner ke andhar rkhna nhi toh ese bahut sara data tha
+                                $project:
+                                {
+                                    fullName:1,
+                                    username:1,
+                                    avatar:1
+                                }
+
+                            },
+                            {
+                                $addFields:
+                                {
+                                    owner:
+                                    {
+                                        $first:"$owner"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    }
+])
+
+return res.status(200)
+.json(new ApiResponse(200,user[0].watchHistory,"watch history fetched successfully"))
+})
+
+
+export {registerUser,loginUser,logoutUser,refreshAccessToken,changeCurrentPassword,getCurrentUser,updateAccountDetails,updateUserAvatar,updateUserCoverImage,getUserChannelProfile,getWatchHistory}
